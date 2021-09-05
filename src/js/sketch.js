@@ -19,19 +19,19 @@ let bandEllipses = [];
 
 // Audio Frequency Bands
 const bandDetectorConfigs = [
-  { low: 20, high: 60, thresh: 0.6, fpp: 30 }, // Sub
-  { low: 60, high: 250, thresh: 0.6, fpp: 30 }, // Bass
-  { low: 250, high: 500, thresh: 0.5, fpp: 30 }, // Low-Mid
-  { low: 500, high: 2000, thresh: 0.35, fpp: 30 }, // Mid
-  { low: 2000, high: 5000, thresh: 0.25, fpp: 30 }, // High-Mid
+  { low: 20, high: 60, thresh: 0.45, fpp: 60 }, // Sub
+  { low: 60, high: 250, thresh: 0.4, fpp: 60 }, // Bass
+  { low: 250, high: 500, thresh: 0.3, fpp: 60 }, // Low-Mid
+  { low: 500, high: 2000, thresh: 0.2, fpp: 60 }, // Mid
+  // { low: 2000, high: 5000, thresh: 0.5, fpp: 30 }, // High-Mid
 ];
 
 const bandEllipseConfigs = [
-  { x: 250, y: 100 },
-  { x: 350, y: 100 },
-  { x: 450, y: 100 },
-  { x: 550, y: 100 },
-  { x: 650, y: 100 },
+  { x: 150, y: 100, color: "#DC143C", label: "Sub" },
+  { x: 350, y: 100, color: "#FF4500", label: "Bass" },
+  { x: 550, y: 100, color: "#FFD700", label: "L-Mid" },
+  { x: 750, y: 100, color: "#87CEEB", label: "Mid" },
+  //{ x: 950, y: 100, color: "#87CEEB", label: "High-Mid" },
 ];
 
 function detectedPeak(value, index) {
@@ -49,34 +49,33 @@ function initBandDetectors() {
 }
 
 function initBandEllipses() {
-  for (const bandEllipse of bandEllipseConfigs) {
-    let _bandEllipse = new BandEllipse(bandEllipse.x, bandEllipse.y);
+  for (const { x, y, color, label } of bandEllipseConfigs) {
+    let _bandEllipse = new BandEllipse(x, y, color, label);
     bandEllipses.push(_bandEllipse);
   }
 }
 
 class BandEllipse {
-  constructor(x, y) {
+  constructor(x, y, color, label) {
     this.x = x;
     this.y = y;
-    this.size = 20;
+    this.size = 50;
     this.target = 0;
+    this.color = color;
+    this.label = label;
   }
 
   update() {
-    fill(255, 0, 0);
+    noStroke();
+    fill(this.color);
     let _size = this.size + this.target;
     ellipse(this.x, this.y, _size, _size);
-    this.target *= 0.98;
+    this.target *= 0.85;
   }
 
   trigger(value) {
     this.target = 100 * value;
   }
-}
-
-function drawBandEllipse() {
-
 }
 
 //
@@ -116,6 +115,8 @@ function setup() {
 
 function draw() {
   drawFFTBandVisuals();
+  fill(0);
+  text('(click to start)', 20, 20);
 }
 
 function drawFFTBandVisuals() {
@@ -150,7 +151,7 @@ function drawFFTAmpVisuals() {
     vertex(x, y);
   }
   endShape();
-  text('click to start', 20, 20);
+  text('(click to start)', 20, 20);
 }
 
 function drawPlaceholderEllipse() {
@@ -160,7 +161,7 @@ function drawPlaceholderEllipse() {
   rect(0, 0, width, height);
   scale = map(amp.getLevel(), 0, 1.0, 10, width);
   fill(255);
-  text('click to start', width/2.15, 30);
+  text('(click to start)', width/2.15, 30);
   ellipse(width/2, height/2, scale, scale);
 }
 
