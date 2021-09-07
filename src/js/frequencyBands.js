@@ -7,12 +7,13 @@ import BandEllipse from "./shapes/bandEllipse.js";
 
 
 class FrequencyBands {
-  constructor(p, detectorConfigs = {}, shapeConfigs = {}, detectors = [], shapes = []) {
+
+  constructor(p, detectorConfigs = {}, shapeConfigs = {}) {
     this.p = p; // p5 instance
     this.detectorConfigs = detectorConfigs;
     this.shapeConfigs = shapeConfigs;
-    this.detectors = detectors;
-    this.shapes = shapes;
+    this.detectors = [];
+    this.shapes = [];
     this.initDetectors();
     this.initShapes();
     console.log(`*** FrequencyBands initialized`);
@@ -24,13 +25,11 @@ class FrequencyBands {
     for (const { low, high, thresh, fpp } of this.detectorConfigs) {
       this.detectors.push(new p5.PeakDetect(low, high, thresh, fpp));
     }
-
     // Function defined here rather than a method to avoid
     // issues with `this` and the `.onPeak` callback
     const peakDetected = (value, index) => {
       this.shapes[index].trigger(value);
-    }
-
+    };
     for (let i = 0; i < this.detectors.length; i++) {
       this.detectors[i].onPeak(peakDetected, i);
     }

@@ -14,10 +14,8 @@ let amp; // Audio amplitude analyzer
 
 let fftAnalysis = true;
 let fftBandVisuals = true;
-// let fftAmpVisuals = false;
 
 let bands;
-
 let bandDetectors = [];
 let bandShapes = [];
 
@@ -81,7 +79,7 @@ export default function sketch(p) {
     amp.setInput(src);
     p.fft.setInput(src);
 
-    bands = new FrequencyBands(p, bandDetectorConfigs, bandEllipseConfigs, bandDetectors, bandShapes);
+    bands = new FrequencyBands(p, bandDetectorConfigs, bandEllipseConfigs);
     console.log(`*** bands.detectors: ${bands.detectors.length}`);
     console.log(`*** bands.shapes: ${bands.shapes.length}`);
   }
@@ -105,7 +103,6 @@ export default function sketch(p) {
   //
   // Input Handlers
   //
-
   p.mousePressed = () => {
     console.log(`*** Mouse clicked!`);
     p.userStartAudio();

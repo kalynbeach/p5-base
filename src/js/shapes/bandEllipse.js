@@ -3,6 +3,7 @@
  */
 
 class BandEllipse {
+
   constructor(p, x, y, color, label) {
     this.p = p; // p5 instance
     this.x = x;
