@@ -2,6 +2,8 @@
  * p5-base: some basics to get started (+ p5.js-sound)
 **/
 
+import { bandDetectorConfigs, bandEllipseConfigs } from './config.js';
+import FrequencyBands from './frequencyBands.js';
 
 //
 // Global Vars
@@ -12,121 +14,12 @@ let amp; // Audio amplitude analyzer
 
 let fftAnalysis = true;
 let fftBandVisuals = true;
-let fftAmpVisuals = false;
+// let fftAmpVisuals = false;
+
+let bands;
 
 let bandDetectors = [];
-let bandEllipses = [];
-
-// Audio Frequency Bands
-const bandDetectorConfigs = [
-  { low: 20, high: 60, thresh: 0.45, fpp: 60 }, // Sub
-  { low: 60, high: 250, thresh: 0.4, fpp: 60 }, // Bass
-  { low: 250, high: 500, thresh: 0.3, fpp: 60 }, // Low-Mid
-  { low: 500, high: 2000, thresh: 0.2, fpp: 60 }, // Mid
-  // { low: 2000, high: 5000, thresh: 0.5, fpp: 30 }, // High-Mid
-];
-
-const bandEllipseConfigs = [
-  { x: 150, y: 100, color: "#DC143C", label: "Sub" },
-  { x: 350, y: 100, color: "#FF4500", label: "Bass" },
-  { x: 550, y: 100, color: "#FFD700", label: "L-Mid" },
-  { x: 750, y: 100, color: "#87CEEB", label: "Mid" },
-  //{ x: 950, y: 100, color: "#87CEEB", label: "High-Mid" },
-];
-
-function detectedPeak(value, index) {
-  console.log(`*** detectedPeak called: ${value}`);
-  bandEllipses[index].trigger(value);
-}
-
-function initBandDetectors() {
-  for (const { low, high, thresh, fpp } of bandDetectorConfigs) {
-    bandDetectors.push(new p5.PeakDetect(low, high, thresh, fpp));
-  }
-  for (let i = 0; i < bandDetectors.length; i++) {
-    bandDetectors[i].onPeak(detectedPeak, i);
-  }
-}
-
-function initBandEllipses() {
-  for (const { x, y, color, label } of bandEllipseConfigs) {
-    let _bandEllipse = new BandEllipse(x, y, color, label);
-    bandEllipses.push(_bandEllipse);
-  }
-}
-
-class BandEllipse {
-  constructor(x, y, color, label) {
-    this.x = x;
-    this.y = y;
-    this.size = 50;
-    this.target = 0;
-    this.color = color;
-    this.label = label;
-  }
-
-  update() {
-    noStroke();
-    fill(this.color);
-    let _size = this.size + this.target;
-    ellipse(this.x, this.y, _size, _size);
-    this.target *= 0.85;
-  }
-
-  trigger(value) {
-    this.target = 100 * value;
-  }
-}
-
-//
-// Preload
-//
-
-function preload() {}
-
-
-//
-// Setup
-//
-
-function setup() {
-  getAudioContext().suspend();
-  createCanvas(windowWidth, windowHeight);
-  src = new p5.AudioIn();
-  amp = new p5.Amplitude();
-  fft = new p5.FFT();
-  src.start();
-  amp.setInput(src);
-  fft.setInput(src);
-  if (fftAnalysis && fftBandVisuals) {
-    initBandDetectors();
-    initBandEllipses();
-    console.log(`*** bandDetectors: ${bandDetectors.length}`);
-    console.dir(bandDetectors);
-    console.log(`*** bandEllipses: ${bandEllipses.length}`);
-    console.dir(bandEllipses);
-  }
-}
-
-
-//
-// Draw
-//
-
-function draw() {
-  drawFFTBandVisuals();
-  fill(0);
-  text('(click to start)', 20, 20);
-}
-
-function drawFFTBandVisuals() {
-  background(180);
-  fft.analyze();
-  for (let i = 0; i < bandDetectors.length; i++) {
-    bandDetectors[i].update(fft);
-    bandEllipses[i].update();
-  }
-}
+let bandShapes = [];
 
 function drawFFTAmpVisuals() {
   background(220);
@@ -165,18 +58,65 @@ function drawPlaceholderEllipse() {
   ellipse(width/2, height/2, scale, scale);
 }
 
-//
-// Input Handlers
-//
 
-function mousePressed() {
-  console.log(`* Mouse clicked!`);
-  userStartAudio();
-}
+export default function sketch(p) {
 
-function keyPressed(e) {
-  // Key codes -> https://keycode.info/
-  if (e.keyCode == 32) { // Spacebar
-    console.log(`* Spacebar pressed!`);
+  //
+  // Preload
+  //
+  p.preload = () => {}
+
+
+  //
+  // Setup
+  //
+  p.setup = () => {
+    p.getAudioContext().suspend();
+    p.createCanvas(p.windowWidth, p.windowHeight);
+
+    src = new p5.AudioIn();
+    amp = new p5.Amplitude();
+    p.fft = new p5.FFT();
+    src.start();
+    amp.setInput(src);
+    p.fft.setInput(src);
+
+    bands = new FrequencyBands(p, bandDetectorConfigs, bandEllipseConfigs, bandDetectors, bandShapes);
+    console.log(`*** bands.detectors: ${bands.detectors.length}`);
+    console.log(`*** bands.shapes: ${bands.shapes.length}`);
   }
+
+
+  //
+  // Draw
+  //
+  p.draw = () => {
+    p.background(180);
+    p.fft.analyze();
+    for (let i = 0; i < bands.detectors.length; i++) {
+      bands.detectors[i].update(p.fft);
+      bands.shapes[i].update();
+    }
+    p.fill(0);
+    p.text('(click to start)', 20, 20);
+  }
+
+
+  //
+  // Input Handlers
+  //
+
+  p.mousePressed = () => {
+    console.log(`*** Mouse clicked!`);
+    p.userStartAudio();
+    console.log(`*** User Audio Started`);
+  }
+
+  p.keyPressed = (e) => {
+    // Key codes -> https://keycode.info/
+    if (e.keyCode == 32) { // Spacebar
+      console.log(`*** ${e.keyCode}: spacebar pressed!`);
+    }
+  }
+
 }
