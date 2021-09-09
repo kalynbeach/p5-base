@@ -11,13 +11,19 @@ import FrequencyBands from './frequencyBands.js';
 
 let src; // Audio input source
 let amp; // Audio amplitude analyzer
+let bands; // Frequency bands
 
+let userAudioStarted = false;
 let fftAnalysis = true;
 let fftBandVisuals = true;
 
-let bands;
-let bandDetectors = [];
-let bandShapes = [];
+// Closed Ring Vars
+let closedRingSketch = true;
+let numPoints;
+let x;
+let y;
+let outsideRadius = 150;
+let insideRadius = 100;
 
 function drawFFTAmpVisuals() {
   background(220);
@@ -56,6 +62,46 @@ function drawPlaceholderEllipse() {
   ellipse(width/2, height/2, scale, scale);
 }
 
+function setupClosedRing(p, bands) {
+  p.background(0);
+  // numPoints = 1;
+  bands.numPoints = 1;
+  x = p.width / 2;
+  y = p.height / 2;
+}
+
+// By Ira Greenberg - https://p5js.org/examples/form-triangle-strip.html
+function drawClosedRing(p, bands) {
+  for (let i = 0; i < bands.detectors.length; i++) {
+    bands.detectors[i].update(p.fft);
+  }
+  p.background(0);
+  let angle = 0;
+  let angleStep = 180.0 / bands.numPoints;
+
+  p.beginShape(p.TRIANGLE_STRIP);
+  for (let i = 0; i <= bands.numPoints; i++) {
+    let px = x + p.cos(p.radians(angle)) * outsideRadius;
+    let py = y + p.sin(p.radians(angle)) * outsideRadius;
+    angle += angleStep;
+    p.vertex(px, py);
+    px = x + p.cos(p.radians(angle)) * insideRadius;
+    py = y + p.sin(p.radians(angle)) * insideRadius;
+    p.vertex(px, py);
+    angle += angleStep;
+  }
+  p.endShape();
+}
+
+function drawFrequencyBandEllipses(p, bands) {
+  for (let i = 0; i < bands.detectors.length; i++) {
+    bands.detectors[i].update(p.fft);
+    bands.shapes[i].update();
+  }
+  p.fill(250);
+  p.text('(click to start)', 20, 20);
+}
+
 
 export default function sketch(p) {
 
@@ -78,10 +124,16 @@ export default function sketch(p) {
     src.start();
     amp.setInput(src);
     p.fft.setInput(src);
+  
+    bands = new FrequencyBands(p,
+      bandDetectorConfigs,
+      bandEllipseConfigs
+    );
 
-    bands = new FrequencyBands(p, bandDetectorConfigs, bandEllipseConfigs);
-    console.log(`*** bands.detectors: ${bands.detectors.length}`);
-    console.log(`*** bands.shapes: ${bands.shapes.length}`);
+    if (closedRingSketch) {
+      console.log(`[ Closed Ring Sketch ]`);
+      setupClosedRing(p, bands);
+    }
   }
 
 
@@ -89,14 +141,13 @@ export default function sketch(p) {
   // Draw
   //
   p.draw = () => {
-    p.background(180);
+    p.background(0);
     p.fft.analyze();
-    for (let i = 0; i < bands.detectors.length; i++) {
-      bands.detectors[i].update(p.fft);
-      bands.shapes[i].update();
+    if (closedRingSketch) {
+      drawClosedRing(p, bands);
+    } else {
+      drawFrequencyBandEllipses(p, bands);
     }
-    p.fill(0);
-    p.text('(click to start)', 20, 20);
   }
 
 
@@ -105,8 +156,11 @@ export default function sketch(p) {
   //
   p.mousePressed = () => {
     console.log(`*** Mouse clicked!`);
-    p.userStartAudio();
-    console.log(`*** User Audio Started`);
+    if (!userAudioStarted) {
+      p.userStartAudio();
+      console.log(`*** User Audio Started`);
+      userAudioStarted = true;
+    }
   }
 
   p.keyPressed = (e) => {
