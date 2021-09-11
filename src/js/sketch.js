@@ -4,6 +4,7 @@
 
 import { bandDetectorConfigs, bandEllipseConfigs } from './config.js';
 import FrequencyBands from './frequencyBands.js';
+import Rings from './visuals/Rings.js';
 
 //
 // Global Vars
@@ -12,18 +13,14 @@ import FrequencyBands from './frequencyBands.js';
 let src; // Audio input source
 let amp; // Audio amplitude analyzer
 let bands; // Frequency bands
+let rings; // Rings visuals
 
 let userAudioStarted = false;
 let fftAnalysis = true;
 let fftBandVisuals = true;
 
-// Closed Ring Vars
-let closedRingSketch = true;
-let numPoints;
-let x;
-let y;
-let outsideRadius = 150;
-let insideRadius = 100;
+let ringVisuals = true;
+
 
 function drawFFTAmpVisuals() {
   background(220);
@@ -60,37 +57,6 @@ function drawPlaceholderEllipse() {
   fill(255);
   text('(click to start)', width/2.15, 30);
   ellipse(width/2, height/2, scale, scale);
-}
-
-function setupClosedRing(p, bands) {
-  p.background(0);
-  // numPoints = 1;
-  bands.numPoints = 1;
-  x = p.width / 2;
-  y = p.height / 2;
-}
-
-// By Ira Greenberg - https://p5js.org/examples/form-triangle-strip.html
-function drawClosedRing(p, bands) {
-  for (let i = 0; i < bands.detectors.length; i++) {
-    bands.detectors[i].update(p.fft);
-  }
-  p.background(0);
-  let angle = 0;
-  let angleStep = 180.0 / bands.numPoints;
-
-  p.beginShape(p.TRIANGLE_STRIP);
-  for (let i = 0; i <= bands.numPoints; i++) {
-    let px = x + p.cos(p.radians(angle)) * outsideRadius;
-    let py = y + p.sin(p.radians(angle)) * outsideRadius;
-    angle += angleStep;
-    p.vertex(px, py);
-    px = x + p.cos(p.radians(angle)) * insideRadius;
-    py = y + p.sin(p.radians(angle)) * insideRadius;
-    p.vertex(px, py);
-    angle += angleStep;
-  }
-  p.endShape();
 }
 
 function drawFrequencyBandEllipses(p, bands) {
@@ -130,9 +96,11 @@ export default function sketch(p) {
       bandEllipseConfigs
     );
 
-    if (closedRingSketch) {
+    rings = new Rings(p, {});
+
+    if (ringVisuals) {
       console.log(`[ Closed Ring Sketch ]`);
-      setupClosedRing(p, bands);
+      rings.setup(p, bands);
     }
   }
 
@@ -143,8 +111,9 @@ export default function sketch(p) {
   p.draw = () => {
     p.background(0);
     p.fft.analyze();
-    if (closedRingSketch) {
-      drawClosedRing(p, bands);
+    rings.draw(p, bands);
+    if (rings && ringVisuals) {
+      rings.draw(p, bands);
     } else {
       drawFrequencyBandEllipses(p, bands);
     }
